@@ -8,6 +8,58 @@
     <title>Document</title>
 </head>
 <body>
-<h1>Hellow world</h1>
+<div id="app" style="width: 50%">
+    <h1 v-if="isTyping" >is Typing......</h1>
+    <input type="text" placeholder="message here" v-model="text">
+    <button type="button" @click="sendSms()" >sen</button>
+    <p :style="item.type == 0?{'float':'right'}:''" v-for="(item,index) in chats" :key="index">{{ item.message }}</p>
+</div>
+<script src="https://unpkg.com/vue@3.0.0-rc.5/dist/vue.global.prod.js"></script>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    let socket = io();
+    const app = Vue.createApp({
+        el: '#app',
+        data() {
+            return {
+                text: '',
+                chats: [],
+                isTyping : false
+            }
+        },
+        created(){
+            socket.on('chat_transfer', (data) => {
+                this.chats.push({'message':data, 'type':1})
+            })
+
+            socket.on('typing', () => {
+                this.isTyping = true;
+            })
+
+            socket.on('StopTyping', () => {
+                this.isTyping = false;
+            })
+        },
+        watch:{
+            text(value){
+                value ? socket.emit('typing') : socket.emit('StopTyping') ;
+            }
+        },
+        methods:{
+            sendSms(){
+                if (this.text){
+                    this.chats.push({'message':this.text, 'type':0})
+                    socket.emit('chat',this.text)
+                    this.text = '';
+                }
+            }
+        }
+    });
+
+    app.mount('#app')
+
+
+</script>
 </body>
 </html>

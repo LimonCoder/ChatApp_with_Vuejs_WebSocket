@@ -4,13 +4,34 @@ const app = express();
 
 const http = require('http');
 
-const server = http.createServer(app);
+const expresSserver = http.createServer(app);
+
+const {Server} = require("socket.io");
+
+const io = new Server(expresSserver);
+
+io.on('connection', function (socket) {
+
+    socket.on('chat', (msg) => {
+        socket.broadcast.emit('chat_transfer', msg);
+    })
+
+    socket.on('typing', () => {
+        socket.broadcast.emit('typing');
+    })
+
+    socket.on('StopTyping', () => {
+        socket.broadcast.emit('StopTyping');
+    })
+
+
+})
 
 app.get('/', function (request, response) {
-   response.sendFile(__dirname+"/index.html");
+    response.sendFile(__dirname + "/index.html");
 })
 
 
-server.listen(8000, function () {
+expresSserver.listen(8000, function () {
     console.log("server runng @ 8000")
 })
