@@ -5,14 +5,58 @@
     <meta name="viewport"
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
+    <title>Chat App</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB"
+          crossorigin="anonymous">
 </head>
 <body>
-<div id="app" style="width: 50%">
-    <h1 v-if="isTyping" >is Typing......</h1>
-    <input type="text" placeholder="message here" v-model="text">
-    <button type="button" @click="sendSms()" >sen</button>
-    <p :style="item.type == 0?{'float':'right'}:''" v-for="(item,index) in chats" :key="index">{{ item.message }}</p>
+<div class="container" id="app">
+    <div class="col-md-4 col-lg-6 offset-lg-3 offset-md-4">
+        <div v-if="ready">
+            <h4>{{ name }}</h4>
+            <p v-for="item in info">
+                <small>{{ item.name }} {{ item.type }}</small>
+            </p>
+        </div>
+        <form @submit.prevent="setName" class="mt-4" v-else>
+            <div class="form-group row">
+                <label>Set Your Name First</label>
+                <input type="text" class="form-control col-9" v-model="name" placeholder="Type Here">
+                <input type="submit" value="Add" class="btn btn-sm btn-info ml-1 col-2">
+            </div>
+        </form>
+        <div class="card bg-info" v-if="ready" >
+<!--            <div class="card-header text-white">-->
+<!--                Alladin Chats-->
+<!--                <span class="float-right">{{ connectionCount }} connections, {{ online.length }} Online</span>-->
+<!--            </div>-->
+
+            <ul class="list-group list-group-flush text-right">
+                <small v-if="isTyping" class="text-white">
+                    <i>{{ isTyping }} is typing</i>
+                </small>
+                <li class="list-group-item" v-for="message in chats">
+                        <span :class="{'float-left':(message.type===1)}">
+                            {{ message.message }}
+                            <small>:{{ message.by }}</small>
+                        </span>
+                </li>
+            </ul>
+
+            <div class="card-body">
+                <form @submit.prevent="sendSms">
+                    <div class="form-group">
+                        <input type="text" class="form-control" v-model="text" placeholder="Type Here">
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">send</button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
 </div>
 <script src="https://unpkg.com/vue@3.0.0-rc.5/dist/vue.global.prod.js"></script>
 
@@ -25,34 +69,42 @@
             return {
                 text: '',
                 chats: [],
-                isTyping : false
+                isTyping: false,
+                ready:false,
+                userinfo : {},
+                name:''
             }
         },
-        created(){
+        created() {
             socket.on('chat_transfer', (data) => {
-                this.chats.push({'message':data, 'type':1})
+                this.chats.push({'message': data.text, 'type': 1,'by':data.by})
             })
 
-            socket.on('typing', () => {
-                this.isTyping = true;
+            socket.on('typing', (username) => {
+                this.isTyping = username;
             })
 
             socket.on('StopTyping', () => {
                 this.isTyping = false;
             })
         },
-        watch:{
-            text(value){
-                value ? socket.emit('typing') : socket.emit('StopTyping') ;
+        watch: {
+            text(value) {
+                value ? socket.emit('typing',this.userinfo.name) : socket.emit('StopTyping');
             }
         },
-        methods:{
-            sendSms(){
-                if (this.text){
-                    this.chats.push({'message':this.text, 'type':0})
-                    socket.emit('chat',this.text)
+        methods: {
+            sendSms() {
+                if (this.text) {
+                    this.chats.push({'message': this.text, 'type': 0,'by':'me'})
+                    socket.emit('chat', {'text':this.text, 'by':this.userinfo.name})
                     this.text = '';
                 }
+            },
+            setName(){
+                this.userinfo.name = this.name;
+                this.userinfo.type = 'joined';
+                this.ready = true;
             }
         }
     });

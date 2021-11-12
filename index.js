@@ -16,8 +16,8 @@ io.on('connection', function (socket) {
         socket.broadcast.emit('chat_transfer', msg);
     })
 
-    socket.on('typing', () => {
-        socket.broadcast.emit('typing');
+    socket.on('typing', (username) => {
+        socket.broadcast.emit('typing',username);
     })
 
     socket.on('StopTyping', () => {
